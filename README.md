@@ -1,2 +1,2 @@
-# invention-framework
+# Invention Framework
 The invention framework.
