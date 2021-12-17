@@ -61,4 +61,14 @@ trait CollectionArrayMethods
     {
         return empty($this->array);
     }
+
+    public function pop()
+    {
+        return array_pop($this->array);
+    }
+
+    public function shift()
+    {
+        return array_shift($this->array);
+    }
 }

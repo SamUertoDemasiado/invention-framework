@@ -61,4 +61,24 @@ class Collection
     {
         return $this->array;
     }
+
+    public function search(string $regexp, bool $index = false): array
+    {
+        $out = [];
+
+        foreach ($this->array as $key => $item) {
+            if (is_numeric($item) || $item === 0) {
+                $item = $item . '';
+            }
+
+            if (is_string($item) && preg_match($regexp, $item)) {
+                if ($index)
+                    $out[$index] = $item;
+                else
+                    $out[] = $item;
+            }
+        }
+
+        return $out;
+    }
 }
