@@ -5,7 +5,7 @@ namespace OSN\Framework\Core;
 
 
 use OSN\Framework\Exceptions\CollectionException;
-use OSN\Framework\Extras\CollectionArrayMethods;
+use OSN\Framework\Core\CollectionArrayMethods;
 
 class Collection
 {
@@ -31,13 +31,22 @@ class Collection
     /**
      * @throws CollectionException
      */
-    public function _($index)
+    public function get($index = null)
     {
+        if ($index === null) {
+            return $this->array;
+        }
+
         if (!isset($this->array[$index])) {
             throw new CollectionException("Collection key '{$index}' doesn't exist");
         }
 
         return $this->array[$index];
+    }
+
+    public function _($index)
+    {
+        return $this->get($index);
     }
 
     public function __get($key)
@@ -50,35 +59,28 @@ class Collection
         return $this->_($index);
     }
 
+    public function __set($key, $value)
+    {
+        $index = $key;
+
+        if ($key[0] === '_')
+            $index = substr($key, 1);
+
+        $this->array[$key] = $value;
+    }
+
+    public function set($key, $value)
+    {
+        $this->__set('_' . $key, $value);
+    }
+
     public function __toString()
     {
-        ob_start();
-        print_r($this->array);
-        return ob_get_clean();
+       return json_encode($this->array);
     }
 
     public function __invoke(): array
     {
         return $this->array;
-    }
-
-    public function search(string $regexp, bool $index = false): array
-    {
-        $out = [];
-
-        foreach ($this->array as $key => $item) {
-            if (is_numeric($item) || $item === 0) {
-                $item = $item . '';
-            }
-
-            if (is_string($item) && preg_match($regexp, $item)) {
-                if ($index)
-                    $out[$index] = $item;
-                else
-                    $out[] = $item;
-            }
-        }
-
-        return $out;
     }
 }

@@ -4,7 +4,7 @@
 namespace OSN\Framework\PowerParser;
 
 
-use App\Core\App;
+use OSN\Framework\Core\App;
 
 class PowerParser extends ParseData
 {

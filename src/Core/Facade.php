@@ -12,6 +12,8 @@ class Facade
 {
     protected static string $className;
     protected static object $object;
+    protected static bool $init = true;
+    protected static array $args = [];
 
     public static function init()
     {
@@ -21,9 +23,10 @@ class Facade
     /**
      * @throws MethodNotFoundException
      */
-    public final static function __callStatic($name, $arguments)
+    public static function __callStatic($name, $arguments)
     {
-        static::init();
+        if (static::$init)
+            static::init();
 
         if (!method_exists(self::$object, $name) && !method_exists(self::$object, "__call")) {
             throw new MethodNotFoundException();

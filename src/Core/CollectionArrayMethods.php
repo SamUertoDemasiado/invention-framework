@@ -1,7 +1,7 @@
 <?php
 
 
-namespace OSN\Framework\Extras;
+namespace OSN\Framework\Core;
 
 use Closure;
 
@@ -70,5 +70,30 @@ trait CollectionArrayMethods
     public function shift()
     {
         return array_shift($this->array);
+    }
+
+    public function search(string $regexp, bool $index = false): array
+    {
+        $out = [];
+
+        foreach ($this->array as $key => $item) {
+            if (is_numeric($item) || $item === 0) {
+                $item = $item . '';
+            }
+
+            if (is_string($item) && preg_match($regexp, $item)) {
+                if ($index)
+                    $out[$index] = $item;
+                else
+                    $out[] = $item;
+            }
+        }
+
+        return $out;
+    }
+
+    public function push($value)
+    {
+        $this->array[] = $value;
     }
 }
