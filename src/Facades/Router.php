@@ -14,7 +14,10 @@ use OSN\Framework\Core\Facade;
  */
 class Router extends Facade
 {
-    public static function init()
+    protected static string $className = \OSN\Framework\Core\Router::class;
+    protected static bool $override = true;
+
+    public static function init($args)
     {
         self::$object = App::$app->router;
     }

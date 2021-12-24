@@ -6,62 +6,44 @@ namespace OSN\Framework\Http;
 
 class Response
 {
+    use ResponseTrait;
+
     protected ?string $response;
-    protected string $statusText;
     protected int $code;
+    protected array $headers;
+    protected string $httpVersion = '1.1';
 
-    public function __construct(?string $response = null, int $code = 200, string $statusText = '')
+    public function __construct(?string $response = null, int $code = 200, array $headers = [])
     {
-        $this->response = $response;
-        $this->code = $code;
-        $this->statusText = $statusText;
+        $this->setContent($response);
+        $this->setCode($code);
+        $this->setStatusFromCode($code);
+        $this->setHeaders($headers);
     }
 
-    public function getCode(): int
+    protected function setData()
     {
-        return $this->code;
-    }
-
-    public function getContent(): string
-    {
-        return $this->response === null ? '' : $this->response;
-    }
-
-    public function getStatusText(): string
-    {
-        return $this->statusText;
-    }
-
-    protected function initData()
-    {
-        $this->setStatus($this->code . " " . $this->statusText);
+        header("HTTP/{$this->httpVersion} {$this->getCode()} {$this->getStatusText()}");
+        foreach ($this->headers as $header => $value) {
+            header("$header: $value");
+        }
     }
 
     public function __toString()
     {
-        $this->initData();
+        $this->setData();
         return $this->getContent();
     }
 
     public function __invoke(): string
     {
-        $this->initData();
+        $this->setData();
         return $this->getContent();
-    }
-
-    public function setCode(int $code = 200)
-    {
-        http_response_code($code);
     }
 
     public function redirect($url, int $code = 301)
     {
         $this->setCode($code);
         header("Location: $url");
-    }
-
-    public function setStatus(string $status)
-    {
-        header("HTTP/1.1 $status");
     }
 }

@@ -11,7 +11,7 @@ class Database extends Facade
 {
     protected static string $className = \OSN\Framework\Core\Database::class;
 
-    public static function init()
+    public static function init($args)
     {
         self::$object = new static::$className(App::$app->env);
     }

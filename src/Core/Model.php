@@ -12,6 +12,7 @@ abstract class Model
 {
     protected array $data = [];
     protected array $fillable = [];
+    protected array $guarded = [];
 
     protected static Database $db;
     protected static ?string $table = null;
@@ -28,6 +29,8 @@ abstract class Model
             $array = explode('\\', get_class($this));
             static::$table = strtolower(end($array)) . 's';
         }
+
+        $this->guarded[] = static::$primaryColumn;
     }
 
     protected function db(): Database
@@ -77,7 +80,7 @@ abstract class Model
 
     public function isFillable($field): bool
     {
-        if (in_array($field, $this->fillable)) {
+        if (in_array($field, $this->fillable) && !in_array($field, $this->guarded)) {
             return true;
         }
 

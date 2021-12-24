@@ -78,8 +78,12 @@ class App
             echo $this->router->resolve();
         }
         catch (HTTPException $e) {
-            $this->response->setStatus($e->getCode() . " " . $e->getMessage());
-            echo new View("errors." . $e->getCode(), ["uri" => $this->request->baseURI, "method" => $this->request->method]);
+            $this->response->setCode($e->getCode());
+            $this->response->setStatusText($e->getMessage());
+            ($this->response)();
+
+            if (view_exists("errors." . $e->getCode()))
+                echo new View("errors." . $e->getCode(), ["uri" => $this->request->baseURI, "method" => $this->request->method]);
         }
     }
 }
