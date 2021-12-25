@@ -24,15 +24,14 @@ class Facade
     }
 
     /**
-     * @throws MethodNotFoundException|ReflectionException
+     * @throws MethodNotFoundException
      */
     public static function __callStatic($name, $arguments)
     {
-        if (method_exists(static::$className, '__construct') && static::$respectConstructor) {
-            $constructor = new FunctionUtils(static::$className, '__construct');
-            $args = $constructor->getParameterTypes();
-            $argsConstructor = array_slice($arguments, 0, count($args));
-            $argsToPass = array_slice($arguments, count($args) === 0 ? 0 : count($args) - 1);
+        if (method_exists(static::$className, '__construct') && method_exists(static::class, 'initFacade')) {
+            $params = static::initFacade(...$arguments);
+            $argsConstructor = $params['argsConstructor'];
+            $argsToPass = $params['args'];
         }
         else {
             $argsConstructor = [];

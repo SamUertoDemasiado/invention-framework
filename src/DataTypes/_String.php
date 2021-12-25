@@ -141,4 +141,30 @@ class _String implements DataTypeInterface
     {
         return json_decode($this->data);
     }
+
+    public function slug(string $delim = '-')
+    {
+        $delims = "\\\n\r~`!@#\$%^&*()_+=\"\';:,[]{}?<>";
+        return strtolower(preg_replace("/( )+/", $delim, trim(preg_replace("/[(\-+) \\(\/)\n\?\<\>\r\~\`\!\@\#\$\%\^\&\*\(\)\_\+\=\"\'\;\:\,\[\]\{\}]/", ' ', $this->data))));
+    }
+
+    public function test(string $regex): bool
+    {
+        return preg_match($regex, $this->data);
+    }
+
+    public function match(string $regex, &$matches = null, int $flags = 0, int $offset = 0)
+    {
+        return preg_match($regex, $this->data, $matches, $flags, $offset);
+    }
+
+    public function replace($regex, $replacement, int $limit = -1, &$count = null)
+    {
+        return preg_replace($regex, $replacement, $this->data, $limit,$count);
+    }
+
+    public function isURL()
+    {
+        return filter_var($this->data, FILTER_VALIDATE_URL);
+    }
 }
