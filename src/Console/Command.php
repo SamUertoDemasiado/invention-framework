@@ -4,8 +4,6 @@
 namespace OSN\Framework\Console;
 
 
-use OSN\Framework\Core\Collection;
-
 class Command
 {
     public array $argsRequired = [];
@@ -42,20 +40,28 @@ class Command
     {
         $subcmds = $this->subcommandsDescription();
         $out = '';
-        $methods = get_class_methods(static::class);
+        $methods0 = get_class_methods(static::class);
         $excluded = get_class_methods(self::class);
 
-        $methods = array_filter($methods, function ($value) use ($excluded) {
+        $methods = array_filter($methods0, function ($value) use ($excluded) {
             return !in_array($value, $excluded) && substr($value, 0, 2) !== '__' && $value !== 'default';
         });
 
         asort($methods);
 
+        $methods = array_merge(!in_array('default', $methods0) || !isset($subcmds['default']) ? [] : ['default'], $methods);
+
         $array = explode('\\', get_class($this));
         $classCmd = strtolower(str_replace('Command', '', end($array)));
 
         foreach ($methods as $method) {
-            $out .= "\t\033[1;32m{$classCmd}:{$method}\033[0m\t\t";
+            $out .= "\t\033[1;32m{$classCmd}";
+
+            if ($method != 'default') {
+                $out .= ":{$method}";
+            }
+
+            $out .= "\033[0m\t\t";
 
             if (isset($subcmds[$method][0])) {
                 $out .= $subcmds[$method][0];
@@ -63,7 +69,13 @@ class Command
 
             $out .= "\n";
             $out .= "\t     Usage:\n";
-            $out .= "\t        \033[1;32mphp\033[1;33m {$this->getScriptName()} \033[0m\033[1m{$classCmd}:{$method}\033[0m";
+            $out .= "\t        \033[1;32mphp\033[1;33m {$this->getScriptName()} \033[0m\033[1m{$classCmd}";
+
+            if ($method != 'default') {
+                $out .= ":{$method}";
+            }
+
+            $out .= "\033[0m";
 
             if (isset($subcmds[$method][2])) {
                 $out .=  ' ' . $subcmds[$method][2];

@@ -19,6 +19,9 @@ class MigrateCommand extends Command
     public function subcommandsDescription(): array
     {
         return [
+            'default' => [
+                "Apply all non-applied migrations"
+            ],
             'rollback' => [
                 "Rollback all applied migrations"
             ]
