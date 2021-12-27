@@ -77,15 +77,17 @@ trait CollectionArrayMethods
         $out = [];
 
         foreach ($this->array as $key => $item) {
+            $real_item = $item;
+
             if (is_numeric($item) || $item === 0) {
                 $item = $item . '';
             }
 
             if (is_string($item) && preg_match($regexp, $item)) {
                 if ($index)
-                    $out[$index] = $item;
+                    $out[$index] = $real_item;
                 else
-                    $out[] = $item;
+                    $out[] = $real_item;
             }
         }
 
