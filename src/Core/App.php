@@ -75,11 +75,14 @@ class App
     public function run()
     {
         try {
-            echo $this->router->resolve();
+            $output = $this->router->resolve();
+            ($this->response)();
+            echo $output;
         }
         catch (HTTPException $e) {
             $this->response->setCode($e->getCode());
             $this->response->setStatusText($e->getMessage());
+            $this->response->setHeadersParsed($e->getHeaders());
             ($this->response)();
 
             if (view_exists("errors." . $e->getCode()))

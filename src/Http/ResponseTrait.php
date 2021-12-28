@@ -6,7 +6,11 @@ namespace OSN\Framework\Http;
 
 trait ResponseTrait
 {
+    protected ?string $response;
+    protected $code;
+    protected ?array $headers = [];
     protected string $statusText;
+
     protected static array $responseCodes = [
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -101,6 +105,7 @@ trait ResponseTrait
     public function setCode(int $code = 200)
     {
         $this->code = $code;
+        $this->setStatusFromCode($code);
     }
 
     public function getStatusFromCode(int $code)
@@ -119,5 +124,33 @@ trait ResponseTrait
     public function setHeaders(array $headers): void
     {
         $this->headers = $headers;
+    }
+
+    /**
+     * @param array $custom_headers
+     */
+    public function setHeadersParsed(array $custom_headers = []): void
+    {
+        $headers = headers_list();
+
+        if (!empty($custom_headers)) {
+            $headers = array_merge($headers, $custom_headers);
+        }
+
+        $headers_array = $this->headers;
+
+        foreach ($headers as $header) {
+            $tmp = explode(':', $header);
+            $key = trim($tmp[0]);
+            array_shift($tmp);
+            $headers_array[$key] = trim(implode(':', $tmp));
+        }
+
+        $this->headers = $headers_array;
+    }
+
+    public function header($key, $value)
+    {
+        $this->headers[$key] = $value;
     }
 }

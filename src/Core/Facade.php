@@ -28,7 +28,7 @@ class Facade
      */
     public static function __callStatic($name, $arguments)
     {
-        if (method_exists(static::$className, '__construct') && method_exists(static::class, 'initFacade')) {
+        if (method_exists(static::$className ?? '', '__construct') && method_exists(static::class, 'initFacade')) {
             $params = static::initFacade(...$arguments);
             $argsConstructor = $params['argsConstructor'];
             $argsToPass = $params['args'];

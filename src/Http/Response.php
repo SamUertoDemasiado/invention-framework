@@ -8,9 +8,6 @@ class Response
 {
     use ResponseTrait;
 
-    protected ?string $response;
-    protected int $code;
-    protected array $headers;
     protected string $httpVersion = '1.1';
 
     public function __construct(?string $response = null, int $code = 200, array $headers = [])
@@ -18,7 +15,7 @@ class Response
         $this->setContent($response);
         $this->setCode($code);
         $this->setStatusFromCode($code);
-        $this->setHeaders($headers);
+        $this->setHeadersParsed($headers);
     }
 
     protected function setData()
@@ -32,18 +29,29 @@ class Response
     public function __toString()
     {
         $this->setData();
+
+        if ($this->getCode() > 299 && $this->getCode() < 400) {
+            exit();
+        }
+
         return $this->getContent();
     }
 
     public function __invoke(): string
     {
         $this->setData();
+
+        if ($this->getCode() > 299 && $this->getCode() < 400) {
+            exit();
+        }
+
         return $this->getContent();
     }
 
-    public function redirect($url, int $code = 301)
+    public function redirect($url, int $code = 302): self
     {
         $this->setCode($code);
-        header("Location: $url");
+        $this->header('Location', $url);
+        return $this;
     }
 }

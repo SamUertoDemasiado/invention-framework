@@ -43,10 +43,6 @@ class Router
 
         $callback = $this->routes[$method][$path] ?? false;
 
-        /**
-         *  @bug If there is a different route with the request method,
-         *  it returns 404 instead of 405. [SOLVED]
-         */
         if ($method !== 'HEAD' && !$this->hasRoute($path, $method) && $this->hasRoute($path)) {
             throw new HTTPException(405);
         }
