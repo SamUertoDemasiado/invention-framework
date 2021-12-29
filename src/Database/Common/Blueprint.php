@@ -131,7 +131,7 @@ abstract class Blueprint
             $cols = ["updated_at"];
 
         foreach ($cols as $col) {
-            $this->timestamp($col);
+            $this->datetime($col);
         }
     }
 }
