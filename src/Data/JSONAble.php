@@ -6,7 +6,7 @@ namespace OSN\Framework\Data;
 
 trait JSONAble
 {
-    public function toJSON()
+    public function toJSON($data = [])
     {
         $data = $this->rawData();
         return json_encode($this->toArray($data), JSON_PRETTY_PRINT);

@@ -4,6 +4,8 @@
 namespace OSN\Framework\Core;
 
 use App\Http\Config;
+use OSN\Framework\Data\JSON;
+use OSN\Framework\Data\JSONAble;
 use OSN\Framework\Exceptions\FileNotFoundException;
 use OSN\Framework\Exceptions\HTTPException;
 use OSN\Framework\Facades\FunctionUtils;
@@ -12,6 +14,7 @@ use OSN\Framework\Http\HTTPMethodRouterHelper;
 use OSN\Framework\Http\Request;
 use OSN\Framework\Http\Response;
 use OSN\Framework\Facades\Response as ResponseFacade;
+use stdClass;
 
 class Router
 {
@@ -107,6 +110,16 @@ class Router
             }
         }
 
-        return call_user_func_array($callback, [$request ?? App::request()]);
+        $output = call_user_func_array($callback, [$request ?? App::request()]);
+
+        if (is_array($output) || $output instanceof stdClass || is_model($output) || is_collection($output)) {
+            $this->response->header("Content-Type", "application/json");
+
+            if (is_array($output) || $output instanceof stdClass) {
+                return JSON::convert($output);
+            }
+        }
+
+        return $output;
     }
 }

@@ -4,12 +4,15 @@
 namespace OSN\Framework\Core;
 
 
+use OSN\Framework\Data\ArrayAble;
+use OSN\Framework\Data\JSONAble;
 use OSN\Framework\Exceptions\CollectionException;
 use OSN\Framework\Core\CollectionArrayMethods;
 
 class Collection
 {
     use CollectionArrayMethods;
+    use ArrayAble, JSONAble;
 
     protected array $array;
 
@@ -74,9 +77,9 @@ class Collection
         $this->__set('_' . $key, $value);
     }
 
-    public function __toString()
+    public function rawData(): array
     {
-       return json_encode($this->array);
+       return $this->array;
     }
 
     public function __invoke(): array

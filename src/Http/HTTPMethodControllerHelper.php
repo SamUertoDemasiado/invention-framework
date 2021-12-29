@@ -6,7 +6,7 @@ namespace OSN\Framework\Http;
 trait HTTPMethodControllerHelper
 {
     protected array $apiHandlers = [
-        "get" => "index",
+        "get" => ["index", "view"],
         "post" => "store",
         "put" => "update",
         "patch" => "update",
@@ -25,7 +25,8 @@ trait HTTPMethodControllerHelper
                 $this->apiHandlers = $handlers;
             }
 
-            $this->get($route, [$controller, $this->apiHandlers['get']]);
+            $this->get($route, [$controller, $this->apiHandlers['get'][0]]);
+            $this->get($route . "/view", [$controller, $this->apiHandlers['get'][1]]);
             $this->post($route, [$controller, $this->apiHandlers['post']]);
             $this->put($route, [$controller, $this->apiHandlers['put']]);
             $this->patch($route, [$controller, $this->apiHandlers['patch']]);

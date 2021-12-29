@@ -5,11 +5,16 @@ namespace OSN\Framework\Core;
 
 
 use Exception;
+use OSN\Framework\Data\ArrayAble;
+use OSN\Framework\Data\JSONAble;
 use OSN\Framework\Exceptions\ModelException;
 use OSN\Framework\Exceptions\PropertyNotFoundException;
+use PDO;
 
 abstract class Model
 {
+    use ArrayAble, JSONAble;
+
     protected array $data = [];
     protected array $fillable = [];
     protected array $guarded = [];
@@ -87,9 +92,45 @@ abstract class Model
         return false;
     }
 
+    public function rawData(): array
+    {
+        return $this->data;
+    }
+
+    public function toJSOnCallback(): array
+    {
+        return $this->data;
+    }
+
     /*
      * The CRUD Methods.
      */
+
+    public static function find($primaryValue): ?self
+    {
+        try {
+            new static();
+
+            $data = self::$db->prepare("SELECT * FROM " . static::$table . " WHERE " . static::$primaryColumn . " = :value");
+            $data->execute(["value" => $primaryValue]);
+            $data = $data->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($data) < 1) {
+                return null;
+            }
+
+            $model = new static();
+
+            foreach ($data[0] as $field => $value) {
+                $model->$field = $value;
+            }
+
+            return $model;
+        }
+        catch (Exception $e) {
+            throw new ModelException($e->getMessage(), $e->getCode());
+        }
+    }
 
     /**
      * @throws ModelException
