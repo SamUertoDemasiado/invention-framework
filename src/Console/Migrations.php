@@ -4,6 +4,7 @@ namespace OSN\Framework\Console;
 
 use Closure;
 use OSN\Framework\Core\Database;
+use OSN\Framework\Core\Migration;
 use PDO;
 
 class Migrations
@@ -32,6 +33,7 @@ class Migrations
 
             include_once $this->path . $migrationFile;
 
+            /** @var Migration $migration */
             $migration = new $migrationClass();
 
             if($migration->up($this->db) === false) {

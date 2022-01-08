@@ -4,43 +4,58 @@
 namespace OSN\Framework\Core;
 
 
+use Error;
 use Exception;
-use OSN\Framework\Data\ArrayAble;
-use OSN\Framework\Data\JSONAble;
+use JsonSerializable;
+use OSN\Framework\Database\Query;
+use OSN\Framework\Database\QueryBuilderTrait;
+use OSN\Framework\Database\Table;
+use OSN\Framework\Database\TableQueryTrait;
 use OSN\Framework\Exceptions\ModelException;
 use OSN\Framework\Exceptions\PropertyNotFoundException;
+use OSN\Framework\ORM\ORMBaseTrait;
 use PDO;
 
-abstract class Model
+
+/**
+ * @method select(array|string $data = [])
+ * @method patch()
+ * @method insert()
+ * @method delete()
+ * @method truncate()
+ */
+abstract class Model implements JsonSerializable
 {
-    use ArrayAble, JSONAble;
+    use ORMBaseTrait;
 
     protected array $data = [];
     protected array $fillable = [];
     protected array $guarded = [];
 
-    protected static Database $db;
-    protected static ?string $table = null;
-    protected static string $primaryColumn = 'id';
+    public ?string $table = null;
+    public string $primaryColumn = 'id';
+    public Table $_table;
+    protected Database $db;
 
     public function __construct(?array $data = null)
     {
         if ($data != null)
             $this->load($data);
 
-        self::$db = App::db();
+        $this->db = App::db();
 
-        if(static::$table === null) {
+        if($this->table === null) {
             $array = explode('\\', get_class($this));
-            static::$table = strtolower(end($array)) . 's';
+            $this->table = strtolower(end($array)) . 's';
         }
 
-        $this->guarded[] = static::$primaryColumn;
+        $this->guarded[] = $this->primaryColumn;
+        $this->_table = new Table($this->table, $this->primaryColumn, static::class);
     }
 
     protected function db(): Database
     {
-        return App::db();
+        return $this->db;
     }
 
     public function get($key = true)
@@ -92,145 +107,40 @@ abstract class Model
         return false;
     }
 
-    public function rawData(): array
+    public function isGuarded($field): bool
+    {
+        if (in_array($field, $this->guarded) && !in_array($field, $this->fillable)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function jsonSerialize(): array
     {
         return $this->data;
     }
 
-    public function toJSOnCallback(): array
-    {
-        return $this->data;
-    }
-
-    /*
-     * The CRUD Methods.
-     */
-
-    public static function find($primaryValue): ?self
-    {
-        try {
-            new static();
-
-            $data = self::$db->prepare("SELECT * FROM " . static::$table . " WHERE " . static::$primaryColumn . " = :value");
-            $data->execute(["value" => $primaryValue]);
-            $data = $data->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($data) < 1) {
-                return null;
-            }
-
-            $model = new static();
-
-            foreach ($data[0] as $field => $value) {
-                $model->$field = $value;
-            }
-
-            return $model;
-        }
-        catch (Exception $e) {
-            throw new ModelException($e->getMessage(), $e->getCode());
-        }
-    }
-
     /**
-     * @throws ModelException
+     * @param $primaryValue
+     * @return Model|Collection
+     * @throws \OSN\Framework\Exceptions\CollectionException
      */
-    public function insert(): self
+    public static function find($primaryValue)
     {
-        $values = [];
+        $model = new static();
 
-        foreach ($this->data as $key => $value) {
-            $values[] = $value;
+        $data = $model->_table->select()->where($model->_table->primaryKey, $primaryValue)->get()->hasGet(0);
+
+        if ($data === null)
+            return null;
+
+        foreach ($data as $k => $item) {
+            $model->{$k} = $item;
         }
 
-        $keys = implode(', ', array_keys($this->data));
-        $placeholders = implode(',', array_map(function ($value) {
-            return '?';
-        }, $this->data));
-
-        try {
-            $statement = self::$db->prepare("INSERT INTO " . static::$table . "($keys) VALUES($placeholders)");
-            $statement->execute($values);
-        }
-        catch (Exception $e) {
-            throw new ModelException($e->getMessage(), $e->getCode());
-        }
-
-        return $this;
+        return $model;
     }
-
-    /**
-     * @throws ModelException
-     */
-    public function patch(): self
-    {
-        $values = [];
-
-        foreach ($this->data as $key => $value) {
-            if ($key === static::$primaryColumn) {
-                $values['primaryValue'] = $this->{$key};
-                continue;
-            }
-
-            $values[] = $value;
-        }
-
-        $keys = array_keys($this->data);
-        $queryPart = '';
-
-        foreach ($keys as $key) {
-            if ($key === static::$primaryColumn) {
-                continue;
-            }
-
-            $queryPart .= " $key = ?,";
-        }
-
-        $queryPart = substr($queryPart, 0, strlen($queryPart) - 1);
-
-        try {
-            $sql = "UPDATE " . static::$table . " SET $queryPart";
-
-           if (isset($values["primaryValue"])) {
-                $sql .= " WHERE " . static::$primaryColumn . " = :primaryValue";
-           }
-
-            $statement = self::$db->prepare($sql);
-            $statement->execute($values);
-        }
-       catch (Exception $e) {
-           throw new ModelException($e->getMessage(), $e->getCode());
-       }
-
-        return $this;
-    }
-
-    /**
-     * @throws ModelException
-     */
-    public function destroy()
-    {
-        $values = [];
-
-        if (isset($this->data[static::$primaryColumn])) {
-            $values['primaryValue'] = $this->data[static::$primaryColumn];
-        }
-
-        if (!isset($values['primaryValue']))
-            throw new ModelException("A primary column value is required to delete individual rows");
-
-        $sql = "DELETE FROM " . static::$table . ' WHERE ' . static::$primaryColumn . " = :primaryValue";
-
-        try {
-            $statement = self::$db->prepare($sql);
-            $statement->execute($values);
-            return $this;
-        }
-        catch (Exception $e) {
-            throw new ModelException($e->getMessage(), $e->getCode());
-        }
-    }
-
 
     /*
      * The CRUD Methods (MASS ASSIGNMENT).
@@ -244,8 +154,8 @@ abstract class Model
         $models = collection();
 
         try {
-            new static();
-            $data = self::$db->queryFetch("SELECT * FROM " . static::$table);
+            $tmp = new static();
+            $data = $tmp->db->queryFetch("SELECT * FROM " . $tmp->table);
 
             foreach ($data as $datum) {
                 $model = new static();
@@ -279,7 +189,7 @@ abstract class Model
         foreach ($data as $datum) {
             $model = new static();
             $model->load($datum);
-            $model->insert();
+            $model->insert()->execute();
             $models->push($model);
         }
 
@@ -292,16 +202,16 @@ abstract class Model
     public static function update(array $data)
     {
         $model = new static();
-        $primaryValue = $data[static::$primaryColumn] ?? false;
+        $primaryValue = $data[$model->primaryColumn] ?? false;
         $patchedData = $data;
 
         if ($primaryValue !== false) {
-            $model->{static::$primaryColumn} = $primaryValue;
-            unset($patchedData[static::$primaryColumn]);
+            unset($patchedData[$model->primaryColumn]);
         }
 
         $model->load($patchedData);
-        $model->patch();
+        $model->patch()->where($model->primaryColumn, $primaryValue)->execute();
+        $model->{$model->primaryColumn} = $primaryValue;
 
         return $model;
     }
@@ -309,13 +219,44 @@ abstract class Model
     /**
      * @throws ModelException
      */
-    public static function delete(int $primaryValue): self
+    public static function destroy(int $primaryValue): self
     {
         $model = new static();
-
-        $model->{static::$primaryColumn} = $primaryValue;
-        $model->destroy();
+        $model->_table->delete()->where($model->primaryColumn, $primaryValue)->execute();
 
         return $model;
+    }
+
+    protected static function isCUD($name): bool
+    {
+        if ($name === 'insert' || $name === 'patch' || $name === 'delete')
+            return true;
+
+        return false;
+    }
+
+    public function save()
+    {
+        return $this->insert()->execute();
+    }
+
+    public function __call($name, $args)
+    {
+        if (self::isCUD($name)) {
+            return call_user_func_array([$this->_table, $name], array_merge([$this->data], $args));
+        }
+
+        return call_user_func_array([$this->_table, $name], $args);
+    }
+
+    public static function __callStatic($name, $args)
+    {
+        $obj = new static();
+
+        if (self::isCUD($name)) {
+            return call_user_func_array([$obj->_table, $name], array_merge([$obj->data], $args));
+        }
+
+        return call_user_func_array([$obj->_table, $name], $args);
     }
 }

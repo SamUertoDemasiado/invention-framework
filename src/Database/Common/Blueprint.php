@@ -11,8 +11,8 @@ use OSN\Framework\Database\SQLite\Column as SQLiteColumn;
 abstract class Blueprint
 {
     protected string $table;
-    protected string $sqlStart = 'CREATE TABLE {{ table }}(';
-    protected string $sqlEnd = ');';
+    protected string $sqlStart = '';
+    protected string $sqlEnd = '';
 
     /**
      * @var array<SQLiteColumn, MySQLColumn>
@@ -26,6 +26,22 @@ abstract class Blueprint
     public function __construct(string $table)
     {
         $this->table = $table;
+    }
+
+    /**
+     * @param string $sqlStart
+     */
+    public function setSQLStart(string $sqlStart): void
+    {
+        $this->sqlStart = $sqlStart;
+    }
+
+    /**
+     * @param string $sqlEnd
+     */
+    public function setSQLEnd(string $sqlEnd): void
+    {
+        $this->sqlEnd = $sqlEnd;
     }
 
     public function __toString()
@@ -59,7 +75,7 @@ abstract class Blueprint
 
     public function add(string $type, string $column, string $attrs = '', bool $colname = true): Column
     {
-        if(App::db()->getVendor() === 'sqlite')
+        if(app()->db->getVendor() === 'sqlite')
             $col = new SQLiteColumn($column);
         else
             $col = new MySQLColumn($column);

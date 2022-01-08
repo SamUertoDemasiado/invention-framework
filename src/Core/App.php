@@ -19,7 +19,7 @@ class App
 {
     public array $config = [
         "root_dir" => ".",
-        "layout" => "main"
+        "layout" => "layouts/main"
     ];
 
     public static self $app;
@@ -87,6 +87,11 @@ class App
 
             if (view_exists("errors." . $e->getCode()))
                 echo new View("errors." . $e->getCode(), ["uri" => $this->request->baseURI, "method" => $this->request->method]);
+        }
+        catch (\Throwable $e) {
+            echo new View('errors.exception', [
+                "exception" => $e
+            ], null);
         }
     }
 }

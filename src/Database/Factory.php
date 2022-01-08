@@ -65,7 +65,7 @@ abstract class Factory
 
         $models->each(function ($model) {
             /** @var Model $model */
-            $model->insert();
+            $model->insert()->execute();
         });
 
         return $models;

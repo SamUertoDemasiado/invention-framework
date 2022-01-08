@@ -34,6 +34,11 @@ abstract class Migration
         $stmt->execute(["name" => $this->migrationName]);
     }
 
+    /**
+     * @param $db
+     * @return bool
+     * @todo Update code
+     */
     public function isApplied($db): bool
     {
         $tables = $db->pdo->query($db->chooseQuery([
@@ -63,11 +68,6 @@ abstract class Migration
         if (!$this->isApplied($db)){
             $q = $this->safeUp();
 
-            if ($q === null)
-                $q = Schema::$query;
-
-            $db->pdo->query($q);
-
             if ($this->entryLogging)
                 $this->registerMigration($db->pdo);
 
@@ -84,11 +84,6 @@ abstract class Migration
                 $this->unregisterMigration($db->pdo);
 
             $q = $this->safeDown();
-
-            if ($q === null)
-                $q = Schema::$query;
-
-            $db->pdo->query($q);
 
             return true;
         }

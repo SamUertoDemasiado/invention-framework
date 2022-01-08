@@ -13,6 +13,6 @@ class Database extends Facade
 
     public static function init($args)
     {
-        self::$object = new static::$className(App::$app->env);
+        self::$object = App::db();
     }
 }

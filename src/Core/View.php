@@ -14,6 +14,7 @@ class View
     protected array $data;
     protected PowerParser $parser;
     protected string $file;
+    protected $title = '';
 
     /**
      * View constructor.
@@ -23,6 +24,7 @@ class View
     {
         $this->name = str_replace('.', '/', $name);
         $this->layout = $layout === '' ? App::$app->config["layout"] : $layout;
+        //$this->layout = $layout === null ? null : $layout;
         $this->data = $data;
 
         $file = App::$app->config["root_dir"] . "/resources/views/" . $this->name . ".php";
@@ -36,22 +38,31 @@ class View
         }
 
         $this->file = $file;
-
         $this->parser = new PowerParser($file);
     }
 
     public function render()
     {
-        $view = $this->renderView();
+        $_names = [];
+        $_sections = [];
+        $_names_modified = [];
+        $_layout = $this->layout;
 
-        if ($this->layout === false)
+        $view = $this->renderView($_names, $_sections, $_names_modified, $_layout);
+
+        if ($this->layout === false || $this->layout === null)
              return $view;
 
-        $layout = new Layout($this->layout);
+        $layout = new Layout($_layout, $this->title, [
+            'sections' => $_sections,
+            'names' => $_names,
+            'names_modified' => $_names_modified,
+        ]);
+
         return preg_replace("/\[\[( *)view( *)\]\]/", $view, $layout);
     }
 
-    public function renderView()
+    public function renderView(&$_names = [], &$_sections = [], &$_names_modified = [], &$_layout = [])
     {
         foreach ($this->data as $key => $value) {
             $$key = $value;
@@ -70,6 +81,8 @@ class View
 
         if (isset($isPower))
             unlink($file);
+
+        $this->title = $title ?? '';
 
         return $out;
     }

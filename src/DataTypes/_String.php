@@ -167,4 +167,20 @@ class _String implements DataTypeInterface
     {
         return filter_var($this->data, FILTER_VALIDATE_URL);
     }
+
+    public function strLastReplace($search, $replace)
+    {
+        $pos = strrpos($this->data, $search);
+
+        if ($pos !== false) {
+            return substr_replace($this->data, $replace, $pos, strlen($search));
+        }
+
+        return $this->data;
+    }
+
+    public function removeMultipleSpaces()
+    {
+        return preg_replace('/( +)/', ' ', $this->data);
+    }
 }

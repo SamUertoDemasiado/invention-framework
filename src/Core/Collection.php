@@ -4,15 +4,12 @@
 namespace OSN\Framework\Core;
 
 
-use OSN\Framework\Data\ArrayAble;
-use OSN\Framework\Data\JSONAble;
+use JsonSerializable;
 use OSN\Framework\Exceptions\CollectionException;
-use OSN\Framework\Core\CollectionArrayMethods;
 
-class Collection
+class Collection implements JsonSerializable
 {
     use CollectionArrayMethods;
-    use ArrayAble, JSONAble;
 
     protected array $array;
 
@@ -66,7 +63,7 @@ class Collection
     {
         $index = $key;
 
-        if ($key[0] === '_')
+        if (is_string($key) && $key[0] === '_')
             $index = substr($key, 1);
 
         $this->array[$key] = $value;
@@ -74,10 +71,10 @@ class Collection
 
     public function set($key, $value)
     {
-        $this->__set('_' . $key, $value);
+        $this->__set($key, $value);
     }
 
-    public function rawData(): array
+    public function jsonSerialize(): array
     {
        return $this->array;
     }
@@ -85,5 +82,25 @@ class Collection
     public function __invoke(): array
     {
         return $this->array;
+    }
+
+    public function has($key): bool
+    {
+        try {
+            $tmp = $this->get($key);
+            return true;
+        }
+        catch (CollectionException $e) {
+            return false;
+        }
+    }
+
+    public function hasGet($key)
+    {
+        if ($this->has($key)) {
+            return $this->get($key);
+        }
+
+        return null;
     }
 }

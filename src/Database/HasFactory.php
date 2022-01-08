@@ -17,7 +17,7 @@ trait HasFactory
             $modelName = trim(end($array));
             $factoryName = "Database\\Factories\\" . $modelName . 'Factory';
 
-            if (!File::exists(strtolower($factoryName) . '.php'))
+            if (!class_exists($factoryName))
                 return;
 
             self::$factory = $factoryName;

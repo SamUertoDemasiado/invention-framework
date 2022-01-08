@@ -19,7 +19,7 @@ trait CollectionArrayMethods
 
     public function map(Closure $callback)
     {
-        return array_map($callback, $this->array);
+        return collection(array_map($callback, $this->array));
     }
 
     public function filter(Closure $callback): array
@@ -32,6 +32,8 @@ trait CollectionArrayMethods
         foreach($this->array as $key => $value) {
             call_user_func_array($callback, [$value, $key, $this->array]);
         }
+
+        return $this;
     }
 
     public function key_exists($key): bool

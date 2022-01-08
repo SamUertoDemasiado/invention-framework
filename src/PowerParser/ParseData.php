@@ -9,8 +9,10 @@ abstract class ParseData
     protected function replacements(): array
     {
         return [
-            "{{" => '<?=',
-            "}}" => '?>',
+            "!{{" => '<?php ',
+            "}}!" => '; ?>',
+            "{{" => '<?= htmlspecialchars(',
+            "}}" => '); ?>',
         ];
     }
 }

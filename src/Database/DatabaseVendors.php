@@ -8,6 +8,7 @@ class DatabaseVendors
 {
     public static array $vendors = [
         'mysql' => 'mysql',
+        'mariadb' => 'mariadb',
         'sqlite' => 'sqlite',
     ];
 }
