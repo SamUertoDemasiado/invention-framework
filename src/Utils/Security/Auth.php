@@ -1,7 +1,7 @@
 <?php
 
 
-namespace OSN\Framework\Utils;
+namespace OSN\Framework\Utils\Security;
 
 
 use App\Models\User;

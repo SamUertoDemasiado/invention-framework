@@ -1,8 +1,9 @@
 <?php
 
 
-namespace OSN\Framework\Core;
+namespace OSN\Framework\View;
 
+use OSN\Framework\Core\App;
 use OSN\Framework\Exceptions\FileNotFoundException;
 use OSN\Framework\Facades\Request;
 use OSN\Framework\PowerParser\PowerParser;
@@ -53,11 +54,11 @@ class View
         if ($this->layout === false || $this->layout === null)
              return $view;
 
-        $layout = new Layout($_layout, $this->title, [
+        $layout = $_layout === null ? '[[ view ]]' : (new Layout($_layout, $this->title, [
             'sections' => $_sections,
             'names' => $_names,
             'names_modified' => $_names_modified,
-        ]);
+        ]));
 
         return preg_replace("/\[\[( *)view( *)\]\]/", $view, $layout);
     }
@@ -79,8 +80,8 @@ class View
         include $file;
         $out = ob_get_clean();
 
-        if (isset($isPower))
-            unlink($file);
+        //if (isset($isPower))
+         //   unlink($file);
 
         $this->title = $title ?? '';
 

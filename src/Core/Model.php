@@ -4,6 +4,7 @@
 namespace OSN\Framework\Core;
 
 
+use App\Models\User;
 use Error;
 use Exception;
 use JsonSerializable;
@@ -14,6 +15,7 @@ use OSN\Framework\Database\TableQueryTrait;
 use OSN\Framework\Exceptions\ModelException;
 use OSN\Framework\Exceptions\PropertyNotFoundException;
 use OSN\Framework\ORM\ORMBaseTrait;
+use OSN\Framework\ORM\Relationship;
 use PDO;
 
 
@@ -21,7 +23,6 @@ use PDO;
  * @method select(array|string $data = [])
  * @method patch()
  * @method insert()
- * @method delete()
  * @method truncate()
  */
 abstract class Model implements JsonSerializable
@@ -36,13 +37,14 @@ abstract class Model implements JsonSerializable
     public string $primaryColumn = 'id';
     public Table $_table;
     protected Database $db;
+    protected bool $shortFetchRelations = true;
 
     public function __construct(?array $data = null)
     {
         if ($data != null)
             $this->load($data);
 
-        $this->db = App::db();
+        $this->db = db();
 
         if($this->table === null) {
             $array = explode('\\', get_class($this));
@@ -84,10 +86,16 @@ abstract class Model implements JsonSerializable
      */
     public function __get($name)
     {
+        if (method_exists(static::class, $name) && !method_exists(self::class, $name) && $this->shortFetchRelations) {
+            $data = call_user_func([$this, $name]);
+            if ($data instanceof Relationship)
+                return $data->get();
+        }
+
         $data = $this->get($name);
 
         if ($data === false) {
-            throw new PropertyNotFoundException('Cannot find the specified property.');
+            throw new PropertyNotFoundException('Cannot find the specified property', $name);
         }
 
         return $data;
@@ -142,10 +150,6 @@ abstract class Model implements JsonSerializable
         return $model;
     }
 
-    /*
-     * The CRUD Methods (MASS ASSIGNMENT).
-     */
-
     /**
      * @throws ModelException
      */
@@ -174,26 +178,22 @@ abstract class Model implements JsonSerializable
         }
     }
 
+
+    /*
+     * The CRUD Methods (MASS ASSIGNMENT).
+     */
+
     /**
      * @throws ModelException
      * @return Model|Collection
      */
     public static function create(array $data)
     {
-        if (!isset($data[0])) {
-            $data = [$data];
-        }
+        $model = new static();
+        $model->load($data);
+        $model->insert()->execute();
 
-        $models = collection();
-
-        foreach ($data as $datum) {
-            $model = new static();
-            $model->load($datum);
-            $model->insert()->execute();
-            $models->push($model);
-        }
-
-        return $models->count() < 2 ? $models->_0 : $models;
+        return $model;
     }
 
     /**
@@ -210,10 +210,10 @@ abstract class Model implements JsonSerializable
         }
 
         $model->load($patchedData);
-        $model->patch()->where($model->primaryColumn, $primaryValue)->execute();
         $model->{$model->primaryColumn} = $primaryValue;
+        $model->patch()->execute();
 
-        return $model;
+        return static::find($primaryValue);
     }
 
     /**
@@ -240,10 +240,23 @@ abstract class Model implements JsonSerializable
         return $this->insert()->execute();
     }
 
+    public function push()
+    {
+        return $this->patch()->execute();
+    }
+
     public function __call($name, $args)
     {
-        if (self::isCUD($name)) {
-            return call_user_func_array([$this->_table, $name], array_merge([$this->data], $args));
+        if ($name === 'insert') {
+            return call_user_func_array([$this->_table, 'insert'], array_merge([$this->data], $args));
+        }
+
+        if ($name === 'patch') {
+            return call_user_func_array([$this->_table, 'patch'], array_merge([$this->data], $args))->where($this->primaryColumn, $this->{$this->primaryColumn});
+        }
+
+        if ($name === 'delete') {
+            return call_user_func_array([$this->_table, 'delete'], [])->where($this->primaryColumn, $this->{$this->primaryColumn});
         }
 
         return call_user_func_array([$this->_table, $name], $args);
@@ -252,11 +265,6 @@ abstract class Model implements JsonSerializable
     public static function __callStatic($name, $args)
     {
         $obj = new static();
-
-        if (self::isCUD($name)) {
-            return call_user_func_array([$obj->_table, $name], array_merge([$obj->data], $args));
-        }
-
         return call_user_func_array([$obj->_table, $name], $args);
     }
 }

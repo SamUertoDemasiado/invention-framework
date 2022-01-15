@@ -1,6 +1,6 @@
 <?php
 
-namespace OSN\Framework\Utils;
+namespace OSN\Framework\Utils\Security;
 
 /**
  * @method static sha1(false|mixed $post)

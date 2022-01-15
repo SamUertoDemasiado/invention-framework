@@ -4,6 +4,9 @@
 namespace OSN\Framework\Core;
 
 
+use OSN\Framework\View\Layout;
+use OSN\Framework\View\View;
+
 abstract class Controller
 {
     /**
@@ -30,7 +33,7 @@ abstract class Controller
             $name = $layout;
         }
 
-        App::$app->config["layout"] = $name;
+        App::$app->config["layout"] = str_replace('.', '/', $name);
     }
 
     /**

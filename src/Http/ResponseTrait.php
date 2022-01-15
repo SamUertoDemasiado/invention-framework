@@ -51,6 +51,7 @@ trait ResponseTrait
         416 => 'Range Not Satisfiable',
         417 => 'Expectation Failed',
         418 => 'I\'m a Teapot',
+        419 => 'Page Expired',
         421 => 'Misdirected Request',
         426 => 'Upgrade Required',
         428 => 'Precondition Required',

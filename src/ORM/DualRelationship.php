@@ -14,13 +14,15 @@ abstract class DualRelationship extends Relationship
     protected string $relationalModelClass;
     protected string $baseModelClass;
 
-    public function __construct(Model $baseModel, Model $relationalModel)
+    public function __construct(Model $baseModel, Model $relationalModel, bool $initParent = true)
     {
-        parent::__construct();
         $this->baseModel = $baseModel;
         $this->relationalModel = $relationalModel;
         $this->baseModelClass = get_class($baseModel);
         $this->relationalModelClass = get_class($relationalModel);
+
+        if ($initParent)
+            parent::__construct();
     }
 
     public function get()

@@ -135,6 +135,7 @@ trait QueryBuilderTrait
     {
         $this->setCurrentTable($table);
         $this->setQuery("DELETE FROM $table");
+        $this->values = [];
         return $this;
     }
 
@@ -188,16 +189,16 @@ trait QueryBuilderTrait
         return null;
     }
 
-    public function orWhere($cond, $value)
+    public function orWhere($cond, $valueOrMode = null)
     {
         $this->addQuery("OR");
-        return $this->where($cond, $value);
+        return $this->where($cond, $valueOrMode);
     }
 
-    public function andWhere($cond, $value)
+    public function andWhere($cond, $valueOrMode = null)
     {
         $this->addQuery("AND");
-        return $this->where($cond, $value);
+        return $this->where($cond, $valueOrMode);
     }
 
     public function orderBy($col, $desc = false)

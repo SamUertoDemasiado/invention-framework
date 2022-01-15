@@ -28,11 +28,11 @@ abstract class Factory
     /**
      * @throws FactoryLimitException
      */
-    public function make()
+    public function make(bool $one = true)
     {
         $array = [];
 
-        for ($i = 1; $i <= $this->maxCount && $i <= $this->count; $i++) {
+        for ($i = 1; $i >= 0 && $i <= $this->maxCount && $i <= $this->count; $i++) {
             if ($i >= $this->maxCount) {
                 throw new FactoryLimitException();
             }
@@ -47,7 +47,7 @@ abstract class Factory
             $array[] = $model;
         }
 
-        return collection($array);
+        return $this->count == 1 && $one ? $array[0] : collection($array);
     }
 
     public function count(int $count): self
@@ -61,7 +61,7 @@ abstract class Factory
      */
     public function create(): Collection
     {
-        $models = $this->make();
+        $models = $this->make(false);
 
         $models->each(function ($model) {
             /** @var Model $model */

@@ -1,9 +1,10 @@
 <?php
 
 
-namespace OSN\Framework\Core;
+namespace OSN\Framework\View;
 
 
+use OSN\Framework\Core\App;
 use OSN\Framework\Exceptions\FileNotFoundException;
 use OSN\Framework\PowerParser\PowerParser;
 
@@ -58,8 +59,8 @@ class Layout
         include $file;
         $out = ob_get_clean();
 
-        if (isset($isPower))
-            unlink($file);
+        //if (isset($isPower))
+         //   unlink($file);
 
         return $out;
     }

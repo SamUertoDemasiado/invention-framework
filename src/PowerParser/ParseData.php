@@ -4,7 +4,7 @@
 namespace OSN\Framework\PowerParser;
 
 
-abstract class ParseData
+trait ParseData
 {
     protected function replacements(): array
     {

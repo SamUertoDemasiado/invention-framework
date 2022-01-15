@@ -1,5 +1,12 @@
 # ChangeLog
 
+### 2022-01-15
+- Fixed `BelongsToMany` Relationship
+- Added `TestCase` class
+- Added Initializers
+- Added config support
+- Minor updates and fixes
+
 ### 2022-01-08
 - Added ORM and some relationship classes
 - Improved PowerParser to work with `:if`, `:for` and other statements like Laravel Blade

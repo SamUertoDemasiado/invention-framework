@@ -12,6 +12,7 @@ use OSN\Framework\Http\HTTPMethodRouterHelper;
 use OSN\Framework\Http\Request;
 use OSN\Framework\Http\Response;
 use OSN\Framework\Facades\Response as ResponseFacade;
+use OSN\Framework\View\View;
 use stdClass;
 
 class Router
@@ -66,8 +67,7 @@ class Router
             $callback[1] = $callback[1] ?? 'index';
             $globals = [];
 
-            $kernel = new Config();
-            $globalMiddlewares = $kernel->globalMiddlewares;
+            $globalMiddlewares = Config::$globalMiddlewares;
 
             foreach ($globalMiddlewares as $globalMiddleware) {
                 $globals[] = new $globalMiddleware();
@@ -79,7 +79,7 @@ class Router
 
             foreach ($middlewares as $middleware) {
                 if ((!in_array($middleware, $globals) && ((!empty($userMiddlewareMethods) && in_array($callback[1], $userMiddlewareMethods)) || empty($userMiddlewareMethods))) || in_array($middleware, $globals)) {
-                    $middlewareResponse = $middleware->handle(App::$app->request);
+                    $middlewareResponse = $middleware->execute(App::$app->request);
 
                     if($middlewareResponse === true || $middlewareResponse === null){
                         continue;
@@ -112,7 +112,7 @@ class Router
 
         if (is_jsonable($output) && !($output instanceof Response || $output instanceof View)) {
             $this->response->header("Content-Type", "application/json");
-            return json_encode($output, env('APP_ENV_DEV') == 1 ? JSON_PRETTY_PRINT : 0);
+            return json_encode($output, env('APP_ENV') != "production" ? JSON_PRETTY_PRINT : 0);
         }
 
         return $output;

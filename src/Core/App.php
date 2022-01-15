@@ -4,12 +4,12 @@
 namespace OSN\Framework\Core;
 
 
-use App\Http\Config;
 use OSN\Envoy\Exception;
 use OSN\Envoy\ParseENV;
 use OSN\Framework\Exceptions\HTTPException;
 use OSN\Framework\Http\Request;
 use OSN\Framework\Http\Response;
+use OSN\Framework\View\View;
 
 /**
  * Class App
@@ -17,10 +17,9 @@ use OSN\Framework\Http\Response;
  */
 class App
 {
-    public array $config = [
-        "root_dir" => ".",
-        "layout" => "layouts/main"
-    ];
+    use Initializable;
+
+    public Config $config;
 
     public static self $app;
 
@@ -37,14 +36,21 @@ class App
      */
     public function __construct(string $rootpath = ".")
     {
-        $this->config["root_dir"] = $rootpath;
+        $this->env = (new ParseENV())->parseFile($rootpath . "/.env");
+        self::$app = $this;
+        $this->config = new Config($rootpath . '/' . $this->env['CONF_DIR']);
+        $this->config->root_dir = $rootpath;
+        self::$app = $this;
+        $this->loadInitializers();
+        $this->preinit();
+
         $this->request = new Request();
         $this->response = new Response();
         $this->router = new Router($this->request, $this->response);
         $this->session = new Session();
-        $this->env = (new ParseENV())->parseFile($this->config["root_dir"] . "/.env");
         $this->db = new Database($this->env);
         self::$app = $this;
+        $this->init();
     }
 
     public static function session(): Session
@@ -75,6 +81,7 @@ class App
     public function run()
     {
         try {
+            $this->afterinit();
             $output = $this->router->resolve();
             ($this->response)();
             echo $output;
@@ -86,7 +93,7 @@ class App
             ($this->response)();
 
             if (view_exists("errors." . $e->getCode()))
-                echo new View("errors." . $e->getCode(), ["uri" => $this->request->baseURI, "method" => $this->request->method]);
+                echo new View("errors." . $e->getCode(), ["uri" => $this->request->baseURI, "method" => $this->request->method], 'layouts.error');
         }
         catch (\Throwable $e) {
             echo new View('errors.exception', [

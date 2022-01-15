@@ -7,6 +7,8 @@ namespace OSN\Framework\Console;
 class Command
 {
     public array $argsRequired = [];
+    public string $commandString;
+    protected bool $subcommandRequired = false;
 
     public function subcommandsDescription(): array
     {
@@ -30,16 +32,45 @@ class Command
         $this->argsRequired[$method]['options'][] = $option;
     }
 
+    public function commandNS(): string
+    {
+        $array = explode("\\", static::class);
+        return strtolower(preg_replace("/Command/", '', end($array)));
+    }
+
+    public function subcommandRequired()
+    {
+        $this->subcommandRequired = true;
+    }
+
+    public function default(ArgumentCollection $args)
+    {
+        $c = "[:subcommand]";
+
+        if ($this->subcommandRequired) {
+            $c = ":<subcommand>";
+        }
+
+        if ($args->hasOption('--help')) {
+            echo("Usage: php {$args->_0} " . $this->commandNS() . "$c [options...]\n\n");
+            echo("Options:\n");
+            echo("  \033[1;33m--help\033[0m\tShow this help and exit\n\n");
+            echo("Available Subcommands:\n");
+            echo($this->renderSubcommandsList());
+            return false;
+        }
+
+        return true;
+    }
+
     public function getScriptName()
     {
         global $argv;
         return $argv[0];
     }
 
-    public function renderSubcommandsList(): string
+    public function getActions(): array
     {
-        $subcmds = $this->subcommandsDescription();
-        $out = '';
         $methods0 = get_class_methods(static::class);
         $excluded = get_class_methods(self::class);
 
@@ -49,10 +80,18 @@ class Command
 
         asort($methods);
 
-        $methods = array_merge(!in_array('default', $methods0) || !isset($subcmds['default']) ? [] : ['default'], $methods);
+        return $methods;
+    }
 
-        $array = explode('\\', get_class($this));
-        $classCmd = strtolower(str_replace('Command', '', end($array)));
+    public function renderSubcommandsList(): string
+    {
+        $subcmds = $this->subcommandsDescription();
+        $out = '';
+
+        $methods = $this->getActions();
+        $methods = array_merge(!method_exists($this, 'default') || !isset($subcmds['default']) ? [] : ['default'], $methods);
+
+        $classCmd = $this->commandString;
 
         foreach ($methods as $method) {
             $out .= "\t\033[1;32m{$classCmd}";
@@ -104,10 +143,10 @@ class Command
         return call_user_func_array([$this, $method], [new ArgumentCollection($args)]);
     }
 
-    public function runForeign(string $cmdclass, string $method = 'default', array $args = [])
+    public function runForeign(string $cmdclass, string $method = 'default', $args = [])
     {
-        $args = array_merge([null, null], $args);
-        return call_user_func_array([new $cmdclass(), $method], [new ArgumentCollection($args)]);
+        $args = is_array($args) ? array_merge([null, null], $args) : $args;
+        return call_user_func_array([new $cmdclass(), $method], [is_array($args) ? new ArgumentCollection($args) : $args]);
     }
 
     public function error($msg, $code)

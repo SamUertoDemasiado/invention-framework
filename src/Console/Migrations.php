@@ -29,7 +29,7 @@ class Migrations
 
             $migrationClass = explode(".", $migrationFile)[0];
 
-            echo "Applying migration: $migrationClass\n";
+            echo "\033[1;33mApplying migration\033[0m: $migrationClass\n";
 
             include_once $this->path . $migrationFile;
 
@@ -37,15 +37,15 @@ class Migrations
             $migration = new $migrationClass();
 
             if($migration->up($this->db) === false) {
-                echo "[!]: Migration is already up: $migrationClass\n";
+                echo "\033[1;31m[!]\033[0m: Migration is already up: $migrationClass\n";
                 continue;
             }
 
-            echo "Applied migration: $migrationClass\n";
+            echo "\033[1;32mApplied migration\033[0m: $migrationClass\n";
         }
     }
 
-    public function rollbackAll()
+    public function reset()
     {
         rsort($this->migrations);
         foreach ($this->migrations as $migrationFile) {
@@ -53,18 +53,18 @@ class Migrations
                 continue;
 
             $migrationClass = explode(".", $migrationFile)[0];
-            echo "Rolling back migration: $migrationClass\n";
+            echo "\033[1;33mRolling back migration\033[0m: $migrationClass\n";
 
             include_once $this->path . $migrationFile;
 
             $migration = new $migrationClass();
 
             if($migration->down($this->db) === false) {
-                echo "[!]: Migration is not applied: $migrationClass\n";
+                echo "\033[1;31m[!]\033[0m: Migration is not applied: $migrationClass\n";
                 continue;
             }
 
-            echo "Rolled back migration: $migrationClass\n";
+            echo "\033[1;32mRolled back migration\033[0m: $migrationClass\n";
         }
     }
 }

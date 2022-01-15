@@ -14,6 +14,7 @@ class Commander
     /** @var Command[] */
     public array $commands = [];
     public Arguments $arguments;
+    public ?Command $default = null;
 
     /**
      * Commander constructor.
@@ -24,11 +25,11 @@ class Commander
         $this->arguments = $arguments;
     }
 
-    public function register(string $cmd)
+    public function register(string $cmd, string $command)
     {
-        $array = explode('\\', $cmd);
-        $userCmd = strtolower(str_replace('Command', '', end($array)));
-        $this->commands[$userCmd] = new $cmd();
+        $command = new $command();
+        $command->commandString = $cmd;
+        $this->commands[$cmd] = $command;
     }
 
     public function registerClosure($cmd, Closure $closure)
@@ -62,7 +63,21 @@ class Commander
         $cmd = $this->commands[$class['class']] ?? false;
 
         if ($cmd === false || !method_exists($cmd, $class['method'])) {
-            throw new CommandNotFoundException('The command "' . $userCmd . "\" could not be found.");
+            if ($this->default !== null) {
+                $out = $this->default->default(new ArgumentCollection(app()->argv));
+
+                if ($out != '' && is_string($out)) {
+                    if (substr($out, strlen($out) - 2) != "\n")
+                        $out .= "\n";
+
+                    return $out;
+                }
+
+                return "\n";
+            }
+            else {
+                throw new CommandNotFoundException('The command "' . $userCmd . "\" could not be found.");
+            }
         }
 
         $filtered_argv = array_filter($argv, function ($value) {
@@ -82,6 +97,28 @@ class Commander
             }
         }
 
-        return call_user_func_array([$cmd, $class['method']], [$args]);
+        $out = call_user_func_array([$cmd, $class['method']], [$args]);
+
+        if (!is_string($out)) {
+            $out = '';
+        }
+
+        if (substr($out, strlen($out) - 2) != "\n") {
+            $out .= "\n";
+        }
+
+        return $out;
+    }
+
+    public function renderCommandList()
+    {
+        foreach ($this->commands as $command => $object) {
+            dump($command, $object);
+        }
+    }
+
+    public function registerDefault(string $cmd)
+    {
+        $this->default = new $cmd();
     }
 }

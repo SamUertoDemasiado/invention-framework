@@ -6,15 +6,20 @@ namespace OSN\Framework\PowerParser;
 
 use OSN\Framework\Core\App;
 
-class PowerParser extends ParseData
+class PowerParser
 {
-    protected string $tmpdir;
+    use ParseData;
+
     protected string $file;
 
     public function __construct(string $file)
     {
-        $this->tmpdir = tmp_dir();
         $this->file = $file;
+    }
+
+    public static function cache_dir()
+    {
+        return cache_dir() . 'powerparser/';
     }
 
     protected function php(string $code): string
@@ -132,9 +137,9 @@ class PowerParser extends ParseData
         $output = preg_replace('/:endsection/', $this->php('$_sections[array_shift($_names_modified)] = ob_get_clean();'), $output);
 
         /**
-         * getSection statement.
+         * yield statement.
          */
-        $regex = ":getSection\((.*)\)";
+        $regex = ":yield\((.*)\)";
         if (preg_match_all("/$regex/", $output, $matches)) {
             $output = $this->replaceFromPregArray($output, $matches, $this->php('echo $_sections[%s] ?? "";'));
         }
@@ -146,6 +151,50 @@ class PowerParser extends ParseData
         if (preg_match_all("/$regex/", $output, $matches)) {
             $output = $this->replaceFromPregArray($output, $matches, $this->php('$_layout = %s;'));
         }
+
+        /**
+         * args statement.
+         */
+        $regex = ":args\(([0-9]+)\)";
+        if (preg_match_all("/$regex/", $output, $matches)) {
+            $output = $this->replaceFromPregArray($output, $matches, $this->php('echo $_component_args[%s] ?? "";'));
+        }
+
+        /**
+         * :csrf statement.
+         */
+        $output = preg_replace('/:csrf/', $this->php('echo \OSN\Framework\View\Component::init("csrf");'), $output);
+
+        /**
+         * method statement.
+         */
+        $regex = ":method\((.+)\)";
+        if (preg_match_all("/$regex/", $output, $matches)) {
+            $output = $this->replaceFromPregArray($output, $matches, $this->php('echo \OSN\Framework\View\Component::init("custom-httpmethod", %s);'));
+        }
+
+        /**
+         * component statement.
+         */
+        $regex = ":component\([^\r\n].*[^\r\n]\)";
+        if (preg_match_all("/$regex/", $output, $matches)) {
+            foreach ($matches[0] as $match) {
+                $m = preg_replace('/:component\(|\)/', '', $match);
+                $output = str_replace($match, $this->php('echo \OSN\Framework\View\Component::init('.$m.');'), $output);
+            }
+        }
+
+        /**
+         * function and endfunction statements.
+         */
+        $regex = ":function:(.*)\((.*)\)";
+        if (preg_match_all("/$regex/", $output, $matches)) {
+            foreach ($matches[0] as $k => $match) {
+                $output = str_replace($match, $this->php("function " . ($matches[1][$k] ?? '') . "(" . ($matches[2][$k] ?? '') . ") {"), $output);
+            }
+        }
+
+        $output = $this->endblock($output, ':endfunction');
 
         return $output;
     }
@@ -162,18 +211,27 @@ class PowerParser extends ParseData
         return $this->replaceDirectivesWithPHPCode($output);
     }
 
-    public function compile(): string
+    public function compile(): array
     {
-        $content = file_get_contents($this->file);
-        return $this->parse($content);
+        if (!is_dir(self::cache_dir()))
+            mkdir(self::cache_dir(), 0755, true);
+
+        $tmpfile = self::cache_dir() . sha1_file($this->file) . '.php';
+
+        if (is_file($tmpfile)) {
+            return ['file' => $tmpfile, 'content' => null];
+        }
+        else {
+            $content = file_get_contents($this->file);
+            $parsed = $this->parse($content);
+            file_put_contents($tmpfile, $parsed);
+        }
+
+        return ['file' => $tmpfile, 'content' => $parsed];
     }
 
     public function __invoke(): array
     {
-        $compiled = $this->compile();
-        $tmpfile = $this->tmpdir . rand() . '_' . basename($this->file);
-        file_put_contents($tmpfile, $compiled);
-
-        return ["file" => $tmpfile];
+        return $this->compile();
     }
 }

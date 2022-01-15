@@ -4,10 +4,11 @@
 namespace OSN\Framework\Core;
 
 
+use ArrayAccess;
 use JsonSerializable;
 use OSN\Framework\Exceptions\CollectionException;
 
-class Collection implements JsonSerializable
+class Collection implements JsonSerializable, ArrayAccess
 {
     use CollectionArrayMethods;
 
@@ -102,5 +103,50 @@ class Collection implements JsonSerializable
         }
 
         return null;
+    }
+
+    /**
+     * @param mixed $offset
+     * @return bool
+     */
+    public function offsetExists($offset): bool
+    {
+        return isset($this->array[$offset]);
+    }
+
+    /**
+     * @param mixed $offset
+     * @return mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->array[$offset];
+    }
+
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->array[$offset] = $value;
+    }
+
+    /**
+     * @param mixed $offset
+     */
+    public function offsetUnset($offset)
+    {
+        unset($this->array[$offset]);
+    }
+
+    public function diff(Collection $newUsers)
+    {
+        return array_diff($this->array, $newUsers->array);
+    }
+
+    public function udiff(Collection $newUsers, \Closure $callback)
+    {
+        return array_udiff($this->array, $newUsers->array, $callback);
     }
 }
