@@ -1,2 +1,2 @@
 # Invention Framework
-The invention framework.
+The next level PHP framework.
