@@ -12,6 +12,7 @@ use OSN\Framework\Http\HTTPMethodRouterHelper;
 use OSN\Framework\Http\Request;
 use OSN\Framework\Http\Response;
 use OSN\Framework\Facades\Response as ResponseFacade;
+use OSN\Framework\Routing\Route;
 use OSN\Framework\View\View;
 use stdClass;
 
@@ -20,9 +21,13 @@ class Router
     use HTTPMethodRouterHelper;
     use HTTPMethodControllerHelper;
 
+    /**
+     * @var Route[] $routes
+     */
     protected array $routes = [];
-    protected Request $request;
-    protected Response $response;
+
+    public Request $request;
+    public Response $response;
 
     /**
      * Router constructor.
@@ -35,6 +40,11 @@ class Router
         $this->response = $response;
     }
 
+    public function routes(): array
+    {
+        return $this->routes;
+    }
+
     /**
      * @throws HTTPException|FileNotFoundException
      */
@@ -43,19 +53,23 @@ class Router
         $path = $this->request->baseURI;
         $method = $this->request->method;
 
-        $callback = $this->routes[$method][$path] ?? false;
+        $route = $this->findRoute($path, $method);
+        $anyRoute = $this->findRoute($path);
 
-        if ($method !== 'HEAD' && !$this->hasRoute($path, $method) && $this->hasRoute($path)) {
+        if ($method !== 'HEAD' && $route == false && $anyRoute != false) {
             throw new HTTPException(405);
         }
 
-        if ($method === 'HEAD') {
+
+        if ($method === 'HEAD' && $anyRoute != false) {
             return '';
         }
 
-        if ($callback === false) {
+        if ($route === false) {
             throw new HTTPException(404);
         }
+
+        $callback = $route->action();
 
         if (is_string($callback)) {
             $callback = new View($callback);
@@ -73,11 +87,11 @@ class Router
                 $globals[] = new $globalMiddleware();
             }
 
-            $middlewares = array_merge($globals, $callback[0]->getMiddleware());
+            $middleware = array_merge($globals, $route->middleware(), $callback[0]->getMiddleware());
 
             $userMiddlewareMethods = $callback[0]->getMiddlewareMethods();
 
-            foreach ($middlewares as $middleware) {
+            foreach ($middleware as $middleware) {
                 if ((!in_array($middleware, $globals) && ((!empty($userMiddlewareMethods) && in_array($callback[1], $userMiddlewareMethods)) || empty($userMiddlewareMethods))) || in_array($middleware, $globals)) {
                     $middlewareResponse = $middleware->execute(App::$app->request);
 
@@ -101,8 +115,20 @@ class Router
                         throw new HTTPException(403, "Forbidden");
                     }
 
-                    if (method_exists($request, 'handleInvalid')) {
-                        $request->handleInvalid();
+                    if ($request->autoValidate && !$request->validate()) {
+                        if (method_exists($request, 'handleInvalid')) {
+                            $request->handleInvalid();
+                        }
+                        else {
+                            if ($this->request->header('Referer')) {
+                                $this->response->setCode(406);
+                                $this->response->redirect($this->request->header('Referer'));
+                                return '';
+                            }
+                            else {
+                                throw new HTTPException(406);
+                            }
+                        }
                     }
                 }
             }
