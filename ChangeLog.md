@@ -1,5 +1,8 @@
 # ChangeLog
 
+### 2022-01-24
+- Added `Callable` interface
+
 ### 2022-01-15
 - Fixed `BelongsToMany` Relationship
 - Added `TestCase` class
